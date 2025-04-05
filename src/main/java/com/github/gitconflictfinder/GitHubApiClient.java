@@ -24,7 +24,7 @@ public class GitHubApiClient {
 
             return switch (response.statusCode()) {
                 case 200 -> response.body();
-                case 403, 404 -> fetchWithAccessToken(url);
+                case 401, 403, 404 -> fetchWithAccessToken(url);
                 default -> throw new GitHubApiException("Unexpected status code: " + response.statusCode());
             };
 

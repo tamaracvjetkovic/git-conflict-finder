@@ -59,7 +59,4 @@ public class GitConflictFinder {
 
         return conflictedFiles;
     }
-
-
-
 }
