@@ -3,10 +3,10 @@ package com.github.gitconflictfinder;
 public class Main {
     public static void main(String[] args) {
         GitConflictFinder finder = new GitConflictFinder();
-        String ownerName = "kzi-nastava";
-        String repoName = "iss-project-event-planner-siit-2024-team-11";
+        String ownerName = "tamaracvjetkovic";
+        String repoName = "git-test-project";
         String accessToken = "";
-        String localRepoPath = "";
+        String localRepoPath = "C:\\Users\\cvlad\\Desktop\\FTN SIIT\\Random\\JetBrains, 2025\\1. Improvements of managing infrastructure code in TeamCity\\TestProject\\git-test-project";
         String branchA = "main";
         String branchB = "dev";
 
@@ -15,6 +15,5 @@ public class Main {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 }
