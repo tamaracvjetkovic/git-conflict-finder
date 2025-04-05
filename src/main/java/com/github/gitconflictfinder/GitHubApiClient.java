@@ -15,7 +15,7 @@ public class GitHubApiClient {
         this.context = gitHubRepoContext;
     }
 
-    public String fetchJsonData(String url) {
+    public String fetchJsonData(String url) throws GitHubApiException {
         try {
             HttpResponse<String> response = client.send(
                 HttpRequest.newBuilder().uri(URI.create(url)).GET().build(),
@@ -29,7 +29,7 @@ public class GitHubApiClient {
             };
 
         } catch (IOException | InterruptedException | GitHubApiException e) {
-            throw new RuntimeException(e);
+            throw new GitHubApiException(e.getMessage());
         }
     }
 
