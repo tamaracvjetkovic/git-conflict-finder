@@ -13,7 +13,7 @@ public class GitConflictFinder {
     private static GitHubRepoContext context;
     private static String baseMergeCommit;
 
-    public ArrayList<String> findConflicts(String ownerName, String repoName, String accessToken, String localRepoPath, String branchA, String branchB) throws GitHubApiException, IOException, InterruptedException {
+    public static ArrayList<String> findConflicts(String ownerName, String repoName, String accessToken, String localRepoPath, String branchA, String branchB) throws GitHubApiException, IOException, InterruptedException {
         context = new GitHubRepoContext(ownerName, repoName, accessToken, localRepoPath, branchA);
 
         baseMergeCommit = GitCommandClient.runCommand("git merge-base " + branchB + " " + branchA, localRepoPath);
@@ -25,12 +25,12 @@ public class GitConflictFinder {
         return changedFilesLocal;
     }
 
-    private ArrayList<String> getLocalChangedFiles() throws IOException, InterruptedException {
+    private static ArrayList<String> getLocalChangedFiles() throws IOException, InterruptedException {
         String changedFileNamesLocal = GitCommandClient.runCommand("git diff --name-only " + baseMergeCommit, context.getLocalRepoPath());
         return new ArrayList<>(Arrays.asList(changedFileNamesLocal.split("\n")));
     }
 
-    private ArrayList<String> getRemoteChangedFiles() throws GitHubApiException, JsonProcessingException {
+    private static ArrayList<String> getRemoteChangedFiles() throws GitHubApiException, JsonProcessingException {
         GitHubApiClient githubClient = new GitHubApiClient(context);
 
         String branchComparisonUrl = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/compare/" + baseMergeCommit + "..." + context.getBranchA();
@@ -39,7 +39,7 @@ public class GitConflictFinder {
         return extractConflictedFiles(comparisonJsonData);
     }
 
-    private ArrayList<String> extractConflictedFiles(String filesJsonData) throws JsonProcessingException, GitHubApiException {
+    private static ArrayList<String> extractConflictedFiles(String filesJsonData) throws JsonProcessingException, GitHubApiException {
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode rootNode = objectMapper.readTree(filesJsonData);
 
