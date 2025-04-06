@@ -48,7 +48,7 @@ public class GitHubApiClient {
                 return response.body();
             }
 
-            throw new GitHubApiException("Unexpected status code: " + response.statusCode());
+            throw new GitHubApiException("Unexpected status code: " + response.statusCode() + ".\n\nPlease check if any of these may be the cause of the error:\n1) the repository does not exist,\n2) the repository is private, while no access token was provided,\n3) invalid access token was provided.\n");
 
         } catch (IOException | InterruptedException e) {
             throw new GitHubApiException("Error fetching with access token", e);
