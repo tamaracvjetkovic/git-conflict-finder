@@ -1,5 +1,3 @@
-# README
-
 # GitConflictFinder Library 📚
 
 A library that detects conflicted files between two branches in a GitHub repository.
