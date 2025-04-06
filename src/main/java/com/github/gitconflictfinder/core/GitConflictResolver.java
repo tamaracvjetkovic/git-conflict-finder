@@ -1,14 +1,30 @@
-package com.github.gitconflictfinder;
+package com.github.gitconflictfinder.core;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.gitconflictfinder.GitConflictFinder;
+import com.github.gitconflictfinder.exceptions.GitHubApiException;
+import com.github.gitconflictfinder.clients.GitCommandClient;
+import com.github.gitconflictfinder.clients.GitHubApiClient;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
+/**
+ * Core logic for detecting file conflicts between two Git branches.
+ * AUTHOR NOTE: the core logic was intentionally separated from the main {@link GitConflictFinder} class for easier testing! :)
+ *
+ * How does it work?
+ * - gets the merge base commit SHA
+ * - runs a command to get all local changes from the branchB since merge base commit,
+ * - gets all remote changes via GitHub API since the merge base commit,
+ * - compares the local and remote changes and returns the overlapping files as conflicts.
+ *
+ * Used internally by {@link GitConflictFinder}.
+ */
 public class GitConflictResolver {
     private final GitCommandClient cmdClient;
     private final GitHubApiClient githubClient;

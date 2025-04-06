@@ -1,17 +1,18 @@
-package com.github.gitconflictfinder;
+package com.github.gitconflictfinder.demo;
+
+import com.github.gitconflictfinder.GitConflictFinder;
 
 import java.util.ArrayList;
 
 public class Main {
     public static void main(String[] args) {
-        GitConflictFinder finder = new GitConflictFinder();
         String ownerName = "tamaracvjetkovic";
         String repoName = "git-test-project";
         String accessToken = "";
 
-        String localRepoPath = "C:\\Users\\cvlad\\Desktop\\FTN SIIT\\Random\\JetBrains, 2025\\1. Improvements of managing infrastructure code in TeamCity\\TestProject1\\git-test-project";
-        //String localRepoPath = "C:\\Users\\cvlad\\Desktop\\FTN SIIT\\Random\\JetBrains, 2025\\1. Improvements of managing infrastructure code in TeamCity\\TestProject2\\git-test-project";
-        //String localRepoPath = "C:\\Users\\cvlad\\Desktop\\FTN SIIT\\Random\\JetBrains, 2025\\1. Improvements of managing infrastructure code in TeamCity\\TestProject3\\git-test-project";
+        String localRepoPath = "C:\\Users\\my_username\\Desktop\\FTN SIIT\\Random\\JetBrains, 2025\\1. Improvements of managing infrastructure code in TeamCity\\TestProject1\\git-test-project";
+        //String localRepoPath = "C:\\Users\\my_username\\Desktop\\FTN SIIT\\Random\\JetBrains, 2025\\1. Improvements of managing infrastructure code in TeamCity\\TestProject2\\git-test-project";
+        //String localRepoPath = "C:\\Users\\my_username\\Desktop\\FTN SIIT\\Random\\JetBrains, 2025\\1. Improvements of managing infrastructure code in TeamCity\\TestProject3\\git-test-project";
 
         String branchA = "main";
         String branchB = "dev";

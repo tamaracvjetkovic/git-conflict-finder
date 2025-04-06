@@ -1,4 +1,6 @@
-package com.github.gitconflictfinder;
+package com.github.gitconflictfinder.clients;
+
+import com.github.gitconflictfinder.core.GitConflictResolver;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -7,6 +9,16 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Client responsible for executing Git commands on the local file system.
+ *
+ * How does it work?
+ * - runs the provided shell command in the given repo directory,
+ * - returns the output if the command successful
+ * - throws exception (IOException, NullPointerException) if there is an error.
+ *
+ * Used by {@link GitConflictResolver} to compare local file changes.
+ */
 public class GitCommandClient {
     public GitCommandClient() {}
 

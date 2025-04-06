@@ -1,4 +1,8 @@
-package com.github.gitconflictfinder;
+package com.github.gitconflictfinder.clients;
+
+import com.github.gitconflictfinder.core.GitConflictResolver;
+import com.github.gitconflictfinder.exceptions.GitHubApiException;
+import com.github.gitconflictfinder.core.GitHubRepoContext;
 
 import java.io.IOException;
 import java.net.URI;
@@ -6,6 +10,18 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+/**
+ * Client responsible for managing GitHub API calls to fetch remote file data.
+ * It handles authentication and checking the status codes.
+ *
+ * How does it work?
+ * - tries accessing the repo file data,
+ * - if the repo is private, tries accessing again, but with access token,
+ * - returns the JSON response if the access is successful
+ * - throws {@link GitHubApiException} if there is an error.
+ *
+ * Used by {@link GitConflictResolver} to compare remote file changes.
+ */
 public class GitHubApiClient {
     private HttpClient client;
     private GitHubRepoContext context;

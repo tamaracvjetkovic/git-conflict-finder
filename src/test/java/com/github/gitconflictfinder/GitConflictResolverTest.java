@@ -1,5 +1,10 @@
 package com.github.gitconflictfinder;
 
+import com.github.gitconflictfinder.clients.GitCommandClient;
+import com.github.gitconflictfinder.clients.GitHubApiClient;
+import com.github.gitconflictfinder.core.GitConflictResolver;
+import com.github.gitconflictfinder.core.GitHubRepoContext;
+import com.github.gitconflictfinder.exceptions.GitHubApiException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
