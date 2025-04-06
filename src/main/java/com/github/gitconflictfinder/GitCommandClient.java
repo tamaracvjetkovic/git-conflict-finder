@@ -8,7 +8,9 @@ import java.util.Arrays;
 import java.util.List;
 
 public class GitCommandClient {
-    public static String runCommand(String command, String localRepoPath) throws IOException, InterruptedException {
+    public GitCommandClient() {}
+
+    public String runCommand(String command, String localRepoPath) throws IOException, InterruptedException {
         File repoDirectory = new File(localRepoPath).getAbsoluteFile();
 
         if (!isGitRepo(repoDirectory)) {
@@ -40,7 +42,7 @@ public class GitCommandClient {
         return output.toString().trim();
     }
 
-    public static boolean isGitRepo(File repoDirectory) {
+    public boolean isGitRepo(File repoDirectory) {
         if (repoDirectory == null || !repoDirectory.exists()) {
             return false;
         }

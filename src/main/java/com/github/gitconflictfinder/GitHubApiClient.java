@@ -15,6 +15,10 @@ public class GitHubApiClient {
         this.context = gitHubRepoContext;
     }
 
+    public GitHubRepoContext getContext() {
+        return context;
+    }
+
     public String fetchJsonData(String url) throws GitHubApiException {
         try {
             HttpResponse<String> response = client.send(
