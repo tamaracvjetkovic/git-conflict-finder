@@ -32,7 +32,12 @@ public class GitConflictResolver {
 
     private ArrayList<String> getLocalChangedFiles(String baseMergeCommit) throws IOException, InterruptedException {
         String changedFilesLocal = cmdClient.runCommand("git diff --name-only " + baseMergeCommit, context.getLocalRepoPath());
-        return new ArrayList<>(Arrays.asList(changedFilesLocal.split("\n")));
+        try {
+            return new ArrayList<>(Arrays.asList(changedFilesLocal.split("\n")));
+
+        } catch (Exception e) {
+            throw new IOException("Could not get changed files from local repository", e);
+        }
     }
 
     private ArrayList<String> getRemoteChangedFiles(String baseMergeCommit) throws GitHubApiException, JsonProcessingException {
@@ -42,24 +47,29 @@ public class GitConflictResolver {
         return extractConflictedFiles(changedFilesRemoteJson);
     }
 
-    private ArrayList<String> extractConflictedFiles(String filesJsonData) throws JsonProcessingException, GitHubApiException {
+    private ArrayList<String> extractConflictedFiles(String filesJsonData) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode rootNode = objectMapper.readTree(filesJsonData);
+        try {
+            JsonNode rootNode = objectMapper.readTree(filesJsonData);
 
-        JsonNode filesNode = rootNode.path("files");
-        if (!filesNode.isArray()) {
+            JsonNode filesNode = rootNode.path("files");
+            if (!filesNode.isArray()) {
+                throw new JsonProcessingException("Error extracting the conflicted files") {};
+            }
+
+            ArrayList<String> conflictedFiles = new ArrayList<>();
+
+            for (JsonNode fileNode : filesNode) {
+                JsonNode filenameNode = fileNode.path("filename");
+                if (filenameNode.isTextual()) {
+                    conflictedFiles.add(filenameNode.asText());
+                }
+            }
+
+            return conflictedFiles;
+
+        } catch (Exception e ) {
             throw new JsonProcessingException("Error extracting the conflicted files") {};
         }
-
-        ArrayList<String> conflictedFiles = new ArrayList<>();
-
-        for (JsonNode fileNode : filesNode) {
-            JsonNode filenameNode = fileNode.path("filename");
-            if (filenameNode.isTextual()) {
-                conflictedFiles.add(filenameNode.asText());
-            }
-        }
-
-        return conflictedFiles;
     }
 }

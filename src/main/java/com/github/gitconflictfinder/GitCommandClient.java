@@ -11,10 +11,14 @@ public class GitCommandClient {
     public GitCommandClient() {}
 
     public String runCommand(String command, String localRepoPath) throws IOException, InterruptedException {
+        if (localRepoPath == null || localRepoPath.isEmpty()) {
+            throw new NullPointerException("localRepoPath is null");
+        }
+
         File repoDirectory = new File(localRepoPath).getAbsoluteFile();
 
         if (!isGitRepo(repoDirectory)) {
-            throw new IOException();
+            throw new IOException("The local repository is not a git repo");
         }
 
         boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
