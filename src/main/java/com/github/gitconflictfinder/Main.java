@@ -17,8 +17,8 @@ public class Main {
         String branchB = "dev";
 
         try {
-            ArrayList<String> conflictedFiles = finder.findConflicts(ownerName, repoName, accessToken, localRepoPath, branchA, branchB);
-            if (conflictedFiles.size() > 0) {
+            ArrayList<String> conflictedFiles = GitConflictFinder.findConflicts(ownerName, repoName, accessToken, localRepoPath, branchA, branchB);
+            if (!conflictedFiles.isEmpty()) {
                 for (String file : conflictedFiles) {
                     System.out.println(file);
                 }
