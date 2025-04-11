@@ -76,3 +76,4 @@ How to get the GitHub **access** **token**? 🔑
 - In the left sidebar, click Developer settings.
 - In the left sidebar, under Personal access tokens, click Tokens (classic).
 - Select Generate new token, then click Generate new token (classic).
+- From scopes, you can select only "repo" and "user", since those are needed for the access.

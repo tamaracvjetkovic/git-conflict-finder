@@ -51,17 +51,17 @@ public class GitConflictResolver {
       */
 
     public ArrayList<String> findConflicts() throws IOException, InterruptedException, GitHubApiException {
-        String baseMergeCommit = cmdClient.runCommand("git merge-base " + context.getBranchB() + " " + context.getBranchA(), context.getLocalRepoPath());
+        String mergeBaseCommit = cmdClient.runCommand("git merge-base " + context.getBranchB() + " " + context.getBranchA(), context.getLocalRepoPath());
 
-        ArrayList<String> changedFilesLocal = getLocalChangedFiles(baseMergeCommit);
-        HashSet<String> changedFilesRemote = getRemoteChangedFiles(baseMergeCommit);
+        ArrayList<String> changedFilesLocal = getLocalChangedFiles(mergeBaseCommit);
+        HashSet<String> changedFilesRemote = getRemoteChangedFiles(mergeBaseCommit);
 
         changedFilesLocal.retainAll(changedFilesRemote);
         return changedFilesLocal;
     }
 
-    private ArrayList<String> getLocalChangedFiles(String baseMergeCommit) throws IOException, InterruptedException {
-        String changedFilesLocal = cmdClient.runCommand("git diff --name-only " + baseMergeCommit, context.getLocalRepoPath());
+    private ArrayList<String> getLocalChangedFiles(String mergeBaseCommit) throws IOException, InterruptedException {
+        String changedFilesLocal = cmdClient.runCommand("git diff --name-only " + mergeBaseCommit, context.getLocalRepoPath());
         try {
             return new ArrayList<>(Arrays.asList(changedFilesLocal.split("\n")));
 
@@ -70,12 +70,12 @@ public class GitConflictResolver {
         }
     }
 
-    private HashSet<String> getRemoteChangedFiles(String baseMergeCommit) throws GitHubApiException, JsonProcessingException {
+    private HashSet<String> getRemoteChangedFiles(String mergeBaseCommit) throws GitHubApiException, JsonProcessingException {
         githubClient.validateAccessToken();
 
         HashSet<String> remoteChangedFiles = new HashSet<>();
 
-        ArrayList<String> commits = getCommits(baseMergeCommit);
+        ArrayList<String> commits = getCommits(mergeBaseCommit);
         for (String sha : commits) {
             updateRemoteChangedFiles(sha, remoteChangedFiles);
         }
@@ -83,55 +83,66 @@ public class GitConflictResolver {
         return remoteChangedFiles;
     }
 
-    private ArrayList<String> getCommits(String baseMergeCommit) throws GitHubApiException, JsonProcessingException {
-        String branchComparisonApiPaged = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/compare/" + baseMergeCommit + "..." + context.getBranchA() + "?per_page=";
-        String commitsRemoteJson = githubClient.fetchJsonData(branchComparisonApiPaged + "1");
+    private ArrayList<String> getCommits(String mergeBaseCommit) throws GitHubApiException, JsonProcessingException {
+        String mergeBaseCommitDate = getMergeBaseCommitDate(mergeBaseCommit);
+        mergeBaseCommitDate = mergeBaseCommitDate.replace("\"", "");
+        // get ONLY commits since the merge base date:
+        // https://api.github.com/repos/tamaracvjetkovic/git-test-project/commits?sha=main&since=2024-01-01T00:00:00Z&per_page=250&page=1
 
-        // NOTE: I gotta find per page 250, then the next page.
+        String branchCommitsApiPaged = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits?sha=" + context.getBranchA() + "&since=" + mergeBaseCommitDate + "?per_page=250&page=";
+        int page = 1;
 
-        int totalCommits = getTotalCommits(commitsRemoteJson);
-        int totalPages = (totalCommits + 249) / 250;
+        ArrayList<String> commits = new ArrayList<>();
 
-        ArrayList<String> commits = new ArrayList<>(totalCommits);
-        updateCommitsPerPage(commitsRemoteJson, commits);
+        while (true) {
+            String commitsRemoteJson = githubClient.fetchJsonData(branchCommitsApiPaged + page);
+            int updatedCommitsCnt = updateCommitsPerPage(commitsRemoteJson, commits);
 
-        for (int i = 1; i < totalPages; i++) {
-            commitsRemoteJson = githubClient.fetchJsonData(branchComparisonApiPaged + (i + 1));
-            updateCommitsPerPage(commitsRemoteJson, commits);
+            if (updatedCommitsCnt < 250) {
+                break;
+            }
+
+            page++;
         }
 
         return commits;
     }
 
-    private int getTotalCommits(String commitsRemoteJson) throws JsonProcessingException {
+    private String getMergeBaseCommitDate(String baseMergeCommit) throws GitHubApiException, JsonProcessingException {
+        // https://api.github.com/repos/tamaracvjetkovic/git-test-project/commits/785a7c4baddb9f8ade6efc80e07de702fb44aa3d?per_page=1&page=1
+        // "commit" -> "author" -> "date" --> 2025-04-05T21:57:36Z
+        String mergeBaseCommitDateApi = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/" + baseMergeCommit + "?per_page=1&page=";
+        String mergeBaseCommitDetailsJson = githubClient.fetchJsonData(mergeBaseCommitDateApi);
+
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            JsonNode rootNode = objectMapper.readTree(commitsRemoteJson);
-            JsonNode totalCommits = rootNode.path("total_commits");
+            JsonNode rootNode = objectMapper.readTree(mergeBaseCommitDetailsJson);
+            JsonNode mergeBaseCommitDate = rootNode.path("commit").path("author").path("date");
 
-            return totalCommits.asInt();
+            return mergeBaseCommitDate.toString();
 
         } catch (Exception e) {
-            throw new JsonProcessingException("Error getting the total commits.") {};
+            throw new JsonProcessingException("Error getting the merge base commit date.") {};
         }
     }
 
-    private void updateCommitsPerPage(String commitsRemoteJson, ArrayList<String> commits) throws JsonProcessingException {
+    private int updateCommitsPerPage(String commitsRemoteJson, ArrayList<String> commits) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            JsonNode rootNode = objectMapper.readTree(commitsRemoteJson);
+            JsonNode filesRootNode = objectMapper.readTree(commitsRemoteJson);
 
-            JsonNode filesNode = rootNode.path("commits");
-            if (!filesNode.isArray()) {
+            if (!filesRootNode.isArray()) {
                 throw new JsonProcessingException("Error extracting the conflicted files.") {};
             }
 
-            for (JsonNode fileNode : filesNode) {
+            for (JsonNode fileNode : filesRootNode) {
                 JsonNode filenameNode = fileNode.path("sha");
                 if (filenameNode.isTextual()) {
                     commits.add(filenameNode.asText());
                 }
             }
+
+            return filesRootNode.size();
 
         } catch (Exception e) {
             throw new JsonProcessingException("Error extracting the conflicted files.") {};
@@ -139,14 +150,14 @@ public class GitConflictResolver {
     }
 
     private void updateRemoteChangedFiles(String sha, HashSet<String> remoteChangedFiles) throws GitHubApiException, JsonProcessingException {
-        String commitFilesApiPaged = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/" + sha + "?page=";
+        String commitFilesApiPaged = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/" + sha + "?per_page=300&page=";
         int page = 1;
 
         while (true) {
             String filesRemoteJson = githubClient.fetchJsonData(commitFilesApiPaged + page);
 
-            Boolean updated = updateRemoteChangedFilesPerPage(filesRemoteJson, remoteChangedFiles);
-            if (!updated) {
+            int updatedFilesCnt = updateRemoteChangedFilesPerPage(filesRemoteJson, remoteChangedFiles);
+            if (updatedFilesCnt < 300) {
                 break;
             }
 
@@ -154,7 +165,7 @@ public class GitConflictResolver {
         }
     }
 
-    private Boolean updateRemoteChangedFilesPerPage(String filesJsonData, HashSet<String> remoteChangedFiles) throws JsonProcessingException {
+    private int updateRemoteChangedFilesPerPage(String filesJsonData, HashSet<String> remoteChangedFiles) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             JsonNode rootNode = objectMapper.readTree(filesJsonData);
@@ -164,10 +175,6 @@ public class GitConflictResolver {
                 throw new JsonProcessingException("Error extracting the conflicted files.") {};
             }
 
-            if (filesNode.isEmpty()) {
-                return false;
-            }
-
             for (JsonNode fileNode : filesNode) {
                 JsonNode filenameNode = fileNode.path("filename");
                 if (filenameNode.isTextual()) {
@@ -175,7 +182,7 @@ public class GitConflictResolver {
                 }
             }
 
-            return true;
+            return filesNode.size();
 
         } catch (Exception e) {
             throw new JsonProcessingException("Error extracting the conflicted files.") {};
