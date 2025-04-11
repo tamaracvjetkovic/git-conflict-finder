@@ -46,13 +46,13 @@ public class GitConflictResolverTest {
     void setUp() {
         context = new GitHubRepoContext("ownerName", "repoName", "", "/local/repo/path", "main", "dev");
         when(githubClient.getContext()).thenReturn(context);
+
         resolver = new GitConflictResolver(gitClient, githubClient);
+        GitHubApiClient.isAccessTokenValid = true;
     }
 
     @Test
     void findConflicts_ConflictsExist_ReturnsConflictedFiles_Example1() throws Exception {
-        GitHubApiClient.isAccessTokenValid = true;
-
         String mergeBaseCommand = "git merge-base " + context.getBranchB() + " " + context.getBranchA();
         when(gitClient.runCommand(mergeBaseCommand, context.getLocalRepoPath())).thenReturn(mockBaseMergeCommit);
 
