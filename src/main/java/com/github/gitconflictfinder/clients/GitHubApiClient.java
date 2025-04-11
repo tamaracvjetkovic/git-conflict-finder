@@ -23,11 +23,14 @@ import java.net.http.HttpResponse;
  * Used by {@link GitConflictResolver} to compare remote file changes.
  */
 public class GitHubApiClient {
-    private HttpClient client;
-    private GitHubRepoContext context;
-    
+    private final HttpClient client;
+    private final GitHubRepoContext context;
+
+    public static Boolean isAccessTokenValid = null;
+    public static int requestCnt = 0;
+
     public GitHubApiClient(GitHubRepoContext gitHubRepoContext) {
-        this.client = HttpClient.newHttpClient();;
+        this.client = HttpClient.newHttpClient();
         this.context = gitHubRepoContext;
     }
 
@@ -35,30 +38,26 @@ public class GitHubApiClient {
         return context;
     }
 
-    public String fetchJsonData(String url) throws GitHubApiException {
-        try {
-            HttpResponse<String> response = client.send(
-                HttpRequest.newBuilder().uri(URI.create(url)).GET().build(),
-                HttpResponse.BodyHandlers.ofString()
-            );
-
-            return switch (response.statusCode()) {
-                case 200 -> response.body();
-                case 401, 403, 404 -> fetchWithAccessToken(url);
-                default -> throw new GitHubApiException("Unexpected status code: " + response.statusCode());
-            };
-
-        } catch (IOException | InterruptedException | GitHubApiException e) {
-            throw new GitHubApiException(e.getMessage());
+    public String fetchJsonData(String api) throws GitHubApiException {
+        if (isAccessTokenValid) {
+            return fetchWithAccessToken(api);
         }
+
+        return fetchWithoutAccessToken(api);
     }
 
-    private String fetchWithAccessToken(String url) throws GitHubApiException {
+    private String fetchWithoutAccessToken(String api) throws GitHubApiException {
+        if (requestCnt > 60) {
+            throw new GitHubApiException("Rate limit exceeded. The maximum number of requests without a valid access token is 60.");
+        }
+
         try {
             HttpResponse<String> response = client.send(
-                HttpRequest.newBuilder().uri(URI.create(url)).header("Authorization", context.getAuthorizationHeader()).GET().build(),
+                HttpRequest.newBuilder().uri(URI.create(api)).GET().build(),
                 HttpResponse.BodyHandlers.ofString()
             );
+
+            requestCnt++;
 
             if (response.statusCode() == 200) {
                 return response.body();
@@ -67,7 +66,57 @@ public class GitHubApiClient {
             throw new GitHubApiException("Unexpected status code: " + response.statusCode() + ".\n\nPlease check if any of these may be the cause of the error:\n1) the repository does not exist,\n2) the repository is private, while no access token was provided,\n3) invalid access token was provided.\n");
 
         } catch (IOException | InterruptedException e) {
-            throw new GitHubApiException("Error fetching with access token", e);
+            throw new GitHubApiException("Error fetching with access token.", e);
+        }
+    }
+
+    private String fetchWithAccessToken(String api) throws GitHubApiException {
+        if (requestCnt > 5000) {
+            throw new GitHubApiException("Rate limit exceeded. The maximum number of requests with a valid access token is 5000.");
+        }
+
+        try {
+            HttpResponse<String> response = client.send(
+                HttpRequest.newBuilder().uri(URI.create(api)).header("Authorization", context.getAuthorizationHeader()).GET().build(),
+                HttpResponse.BodyHandlers.ofString()
+            );
+
+            requestCnt++;
+
+            if (response.statusCode() == 200) {
+                isAccessTokenValid = true;
+                return response.body();
+            }
+
+            throw new GitHubApiException("Unexpected status code: " + response.statusCode() + ".\n\nPlease check if any of these may be the cause of the error:\n1) the repository does not exist,\n2) the repository is private, while no access token was provided,\n3) invalid access token was provided.\n");
+
+        } catch (IOException | InterruptedException e) {
+            throw new GitHubApiException("Error fetching with access token.", e);
+        }
+    }
+
+    public void validateAccessToken() throws GitHubApiException {
+        if (isAccessTokenValid != null) {
+            return;
+        }
+
+        if (context.getAuthorizationHeader() == null) {
+            isAccessTokenValid = false;
+            return;
+        }
+
+            String testApi = "https://api.github.com/user";
+        try {
+            HttpResponse<String> response = client.send(
+                HttpRequest.newBuilder().uri(URI.create(testApi)).header("Authorization", context.getAuthorizationHeader()).GET().build(),
+                HttpResponse.BodyHandlers.ofString()
+            );
+
+            requestCnt++;
+            isAccessTokenValid = (response.statusCode() == 200);
+
+        } catch (IOException | InterruptedException e) {
+            throw new GitHubApiException("Failed to validate the access token", e);
         }
     }
 }
