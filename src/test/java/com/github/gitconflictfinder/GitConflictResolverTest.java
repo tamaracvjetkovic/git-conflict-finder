@@ -51,6 +51,8 @@ public class GitConflictResolverTest {
 
     @Test
     void findConflicts_ConflictsExist_ReturnsConflictedFiles_Example1() throws Exception {
+        GitHubApiClient.isAccessTokenValid = true;
+
         String mergeBaseCommand = "git merge-base " + context.getBranchB() + " " + context.getBranchA();
         when(gitClient.runCommand(mergeBaseCommand, context.getLocalRepoPath())).thenReturn(mockBaseMergeCommit);
 
@@ -58,7 +60,31 @@ public class GitConflictResolverTest {
         String gitDiffCommand = "git diff --name-only " + mockBaseMergeCommit;
         when(gitClient.runCommand(gitDiffCommand, context.getLocalRepoPath())).thenReturn(mockChangedFilesLocal);
 
-        String mockChangedFilesRemoteJson = """
+        when(githubClient.validateAccessToken()).thenReturn(true);
+
+        String mergeBaseCommitDateApi = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/" + mockBaseMergeCommit + "?per_page=1&page=1";
+        String mockCommitDetailsJson = """
+            {
+              "commit": {
+                "author": {
+                  "date": "2025-04-04T10:00:00Z"
+                }
+              }
+            }
+        """;
+        when(githubClient.fetchJsonData(mergeBaseCommitDateApi)).thenReturn(mockCommitDetailsJson);
+
+        String branchCommitsApi = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits?sha=" + context.getBranchA() + "&since=2025-04-04T10:00:00Z&per_page=250&page=1";
+        String mockCommitsJson = """
+            [
+              { "sha": "commit1" },
+              { "sha": "commit2" }
+            ]
+        """;
+        when(githubClient.fetchJsonData(branchCommitsApi)).thenReturn(mockCommitsJson);
+
+        String commit1Api = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/commit1?per_page=300&page=1";
+        String mockCommit1FilesJson = """
             {
               "files": [
                 { "filename": "src/java/model/event/Event.java" },
@@ -67,8 +93,17 @@ public class GitConflictResolverTest {
               ]
             }
         """;
-        String branchComparisonUrl = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/compare/" + mockBaseMergeCommit + "..." + context.getBranchA();
-        when(githubClient.fetchJsonData(branchComparisonUrl)).thenReturn(mockChangedFilesRemoteJson);
+        when(githubClient.fetchJsonData(commit1Api)).thenReturn(mockCommit1FilesJson);
+
+        String commit2Api = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/commit2?per_page=300&page=1";
+        String mockCommit2FilesJson = """
+            {
+              "files": [
+                { "filename": "src/java/services/EventService.java" }
+              ]
+            }
+        """;
+        when(githubClient.fetchJsonData(commit2Api)).thenReturn(mockCommit2FilesJson);
 
         ArrayList<String> conflictedFiles = resolver.findConflicts();
 
@@ -85,16 +120,50 @@ public class GitConflictResolverTest {
         String gitDiffCommand = "git diff --name-only " + mockBaseMergeCommit;
         when(gitClient.runCommand(gitDiffCommand, context.getLocalRepoPath())).thenReturn(mockChangedFilesLocal);
 
-        String mockChangedFilesRemoteJson = """
+        when(githubClient.validateAccessToken()).thenReturn(true);
+
+        String mergeBaseCommitDateApi = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/" + mockBaseMergeCommit + "?per_page=1&page=1";
+        String mockCommitDetailsJson = """
+            {
+              "commit": {
+                "author": {
+                  "date": "2025-04-04T10:00:00Z"
+                }
+              }
+            }
+        """;
+        when(githubClient.fetchJsonData(mergeBaseCommitDateApi)).thenReturn(mockCommitDetailsJson);
+
+        String branchCommitsApi = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits?sha=" + context.getBranchA() + "&since=2025-04-04T10:00:00Z&per_page=250&page=1";
+        String mockCommitsJson = """
+            [
+              { "sha": "commit1" },
+              { "sha": "commit2" }
+            ]
+        """;
+        when(githubClient.fetchJsonData(branchCommitsApi)).thenReturn(mockCommitsJson);
+
+        String commit1Api = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/commit1?per_page=300&page=1";
+        String mockCommit1FilesJson = """
             {
               "files": [
-                { "filename": "file2.txt" },
-                { "filename": "files/file1.txt" }
+                 { "filename": "file2.txt" },
+                 { "filename": "files/file1.txt" }
               ]
             }
         """;
-        String branchComparisonUrl = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/compare/" + mockBaseMergeCommit + "..." + context.getBranchA();
-        when(githubClient.fetchJsonData(branchComparisonUrl)).thenReturn(mockChangedFilesRemoteJson);
+        when(githubClient.fetchJsonData(commit1Api)).thenReturn(mockCommit1FilesJson);
+
+        String commit2Api = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/commit2?per_page=300&page=1";
+        String mockCommit2FilesJson = """
+            {
+              "files": [
+                 { "filename": "file2.txt" },
+                 { "filename": "file3.txt" }
+              ]
+            }
+        """;
+        when(githubClient.fetchJsonData(commit2Api)).thenReturn(mockCommit2FilesJson);
 
         ArrayList<String> conflictedFiles = resolver.findConflicts();
 
@@ -111,17 +180,50 @@ public class GitConflictResolverTest {
         String gitDiffCommand = "git diff --name-only " + mockBaseMergeCommit;
         when(gitClient.runCommand(gitDiffCommand, context.getLocalRepoPath())).thenReturn(mockChangedFilesLocal);
 
-        String mockChangedFilesRemoteJson = """
+        when(githubClient.validateAccessToken()).thenReturn(true);
+
+        String mergeBaseCommitDateApi = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/" + mockBaseMergeCommit + "?per_page=1&page=1";
+        String mockCommitDetailsJson = """
+            {
+              "commit": {
+                "author": {
+                  "date": "2025-04-04T10:00:00Z"
+                }
+              }
+            }
+        """;
+        when(githubClient.fetchJsonData(mergeBaseCommitDateApi)).thenReturn(mockCommitDetailsJson);
+
+        String branchCommitsApi = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits?sha=" + context.getBranchA() + "&since=2025-04-04T10:00:00Z&per_page=250&page=1";
+        String mockCommitsJson = """
+            [
+              { "sha": "commit1" },
+              { "sha": "commit2" }
+            ]
+        """;
+        when(githubClient.fetchJsonData(branchCommitsApi)).thenReturn(mockCommitsJson);
+
+        String commit1Api = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/commit1?per_page=300&page=1";
+        String mockCommit1FilesJson = """
             {
               "files": [
-                { "filename": "file2.txt" },
-                { "filename": "file3.txt" },
-                { "filename": "file4.txt" }
+                 { "filename": "file2.txt" },
+                 { "filename": "files/file1.txt" }
               ]
             }
         """;
-        String branchComparisonUrl = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/compare/" + mockBaseMergeCommit + "..." + context.getBranchA();
-        when(githubClient.fetchJsonData(branchComparisonUrl)).thenReturn(mockChangedFilesRemoteJson);
+        when(githubClient.fetchJsonData(commit1Api)).thenReturn(mockCommit1FilesJson);
+
+        String commit2Api = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/commit2?per_page=300&page=1";
+        String mockCommit2FilesJson = """
+            {
+              "files": [
+                 { "filename": "file2.txt" },
+                 { "filename": "file3.txt" }
+              ]
+            }
+        """;
+        when(githubClient.fetchJsonData(commit2Api)).thenReturn(mockCommit2FilesJson);
 
         ArrayList<String> conflictedFiles = resolver.findConflicts();
 
@@ -137,13 +239,44 @@ public class GitConflictResolverTest {
         String gitDiffCommand = "git diff --name-only " + mockBaseMergeCommit;
         when(gitClient.runCommand(gitDiffCommand, context.getLocalRepoPath())).thenReturn(mockChangedFilesLocal);
 
-        String mockChangedFilesRemoteJson = """
+        when(githubClient.validateAccessToken()).thenReturn(true);
+
+        String mergeBaseCommitDateApi = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/" + mockBaseMergeCommit + "?per_page=1&page=1";
+        String mockCommitDetailsJson = """
+            {
+              "commit": {
+                "author": {
+                  "date": "2025-04-04T10:00:00Z"
+                }
+              }
+            }
+        """;
+        when(githubClient.fetchJsonData(mergeBaseCommitDateApi)).thenReturn(mockCommitDetailsJson);
+
+        String branchCommitsApi = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits?sha=" + context.getBranchA() + "&since=2025-04-04T10:00:00Z&per_page=250&page=1";
+        String mockCommitsJson = """
+            [
+              { "sha": "commit1" },
+              { "sha": "commit2" }
+            ]
+        """;
+        when(githubClient.fetchJsonData(branchCommitsApi)).thenReturn(mockCommitsJson);
+
+        String commit1Api = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/commit1?per_page=300&page=1";
+        String mockCommit1FilesJson = """
             {
               "files": []
             }
         """;
-        String branchComparisonUrl = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/compare/" + mockBaseMergeCommit + "..." + context.getBranchA();
-        when(githubClient.fetchJsonData(branchComparisonUrl)).thenReturn(mockChangedFilesRemoteJson);
+        when(githubClient.fetchJsonData(commit1Api)).thenReturn(mockCommit1FilesJson);
+
+        String commit2Api = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/commit2?per_page=300&page=1";
+        String mockCommit2FilesJson = """
+            {
+              "files": []
+            }
+        """;
+        when(githubClient.fetchJsonData(commit2Api)).thenReturn(mockCommit2FilesJson);
 
         ArrayList<String> conflictedFiles = resolver.findConflicts();
 
@@ -159,16 +292,50 @@ public class GitConflictResolverTest {
         String gitDiffCommand = "git diff --name-only " + mockBaseMergeCommit;
         when(gitClient.runCommand(gitDiffCommand, context.getLocalRepoPath())).thenReturn(mockChangedFilesLocal);
 
-        String mockChangedFilesRemoteJson = """
+        when(githubClient.validateAccessToken()).thenReturn(true);
+
+        String mergeBaseCommitDateApi = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/" + mockBaseMergeCommit + "?per_page=1&page=1";
+        String mockCommitDetailsJson = """
+            {
+              "commit": {
+                "author": {
+                  "date": "2025-04-04T10:00:00Z"
+                }
+              }
+            }
+        """;
+        when(githubClient.fetchJsonData(mergeBaseCommitDateApi)).thenReturn(mockCommitDetailsJson);
+
+        String branchCommitsApi = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits?sha=" + context.getBranchA() + "&since=2025-04-04T10:00:00Z&per_page=250&page=1";
+        String mockCommitsJson = """
+            [
+              { "sha": "commit1" },
+              { "sha": "commit2" }
+            ]
+        """;
+        when(githubClient.fetchJsonData(branchCommitsApi)).thenReturn(mockCommitsJson);
+
+        String commit1Api = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/commit1?per_page=300&page=1";
+        String mockCommit1FilesJson = """
             {
               "files": [
-                { "filename": "file3.txt" },
-                { "filename": "file4.txt" }
+                 { "filename": "file3.txt" },
+                 { "filename": "files/file1.txt" }
               ]
             }
         """;
-        String branchComparisonUrl = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/compare/" + mockBaseMergeCommit + "..." + context.getBranchA();
-        when(githubClient.fetchJsonData(branchComparisonUrl)).thenReturn(mockChangedFilesRemoteJson);
+        when(githubClient.fetchJsonData(commit1Api)).thenReturn(mockCommit1FilesJson);
+
+        String commit2Api = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/commit2?per_page=300&page=1";
+        String mockCommit2FilesJson = """
+            {
+              "files": [
+                 { "filename": "files/file2.txt" },
+                 { "filename": "files/file1.txt" }
+              ]
+            }
+        """;
+        when(githubClient.fetchJsonData(commit2Api)).thenReturn(mockCommit2FilesJson);
 
         ArrayList<String> conflictedFiles = resolver.findConflicts();
 
@@ -184,16 +351,48 @@ public class GitConflictResolverTest {
         String gitDiffCommand = "git diff --name-only " + mockBaseMergeCommit;
         when(gitClient.runCommand(gitDiffCommand, context.getLocalRepoPath())).thenReturn(mockChangedFilesLocal);
 
-        String mockChangedFilesRemoteJson = """
+        when(githubClient.validateAccessToken()).thenReturn(true);
+
+        String mergeBaseCommitDateApi = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/" + mockBaseMergeCommit + "?per_page=1&page=1";
+        String mockCommitDetailsJson = """
+            {
+              "commit": {
+                "author": {
+                  "date": "2025-04-04T10:00:00Z"
+                }
+              }
+            }
+        """;
+        when(githubClient.fetchJsonData(mergeBaseCommitDateApi)).thenReturn(mockCommitDetailsJson);
+
+        String branchCommitsApi = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits?sha=" + context.getBranchA() + "&since=2025-04-04T10:00:00Z&per_page=250&page=1";
+        String mockCommitsJson = """
+            [
+              { "sha": "commit1" },
+              { "sha": "commit2" }
+            ]
+        """;
+        when(githubClient.fetchJsonData(branchCommitsApi)).thenReturn(mockCommitsJson);
+
+        String commit1Api = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/commit1?per_page=300&page=1";
+        String mockCommit1FilesJson = """
             {
               "files": [
-                { "filename": "file.txt" },
-                { "filename": "files/file1.txt" }
+                 { "filename": "files/file1.txt" }
               ]
             }
         """;
-        String branchComparisonUrl = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/compare/" + mockBaseMergeCommit + "..." + context.getBranchA();
-        when(githubClient.fetchJsonData(branchComparisonUrl)).thenReturn(mockChangedFilesRemoteJson);
+        when(githubClient.fetchJsonData(commit1Api)).thenReturn(mockCommit1FilesJson);
+
+        String commit2Api = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/commit2?per_page=300&page=1";
+        String mockCommit2FilesJson = """
+            {
+              "files": [
+                 { "filename": "file.txt" }
+              ]
+            }
+        """;
+        when(githubClient.fetchJsonData(commit2Api)).thenReturn(mockCommit2FilesJson);
 
         ArrayList<String> conflictedFiles = resolver.findConflicts();
 
@@ -233,8 +432,10 @@ public class GitConflictResolverTest {
         String gitDiffCommand = "git diff --name-only " + mockBaseMergeCommit;
         when(gitClient.runCommand(gitDiffCommand, context.getLocalRepoPath())).thenReturn(mockChangedFilesLocal);
 
-        String branchComparisonUrl = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/compare/" + mockBaseMergeCommit + "..." + context.getBranchA();
-        when(githubClient.fetchJsonData(branchComparisonUrl)).thenThrow(GitHubApiException.class);
+        when(githubClient.validateAccessToken()).thenReturn(true);
+
+        String mergeBaseCommitDateApi = "https://api.github.com/repos/" + context.getOwnerName() + "/" + context.getRepoName() + "/commits/" + mockBaseMergeCommit + "?per_page=1&page=1";
+        when(githubClient.fetchJsonData(mergeBaseCommitDateApi)).thenThrow(GitHubApiException.class);
 
         assertThrows(GitHubApiException.class, () -> resolver.findConflicts());
     }
