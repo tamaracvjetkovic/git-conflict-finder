@@ -95,14 +95,14 @@ public class GitHubApiClient {
         }
     }
 
-    public void validateAccessToken() throws GitHubApiException {
+    public Boolean validateAccessToken() throws GitHubApiException {
         if (isAccessTokenValid != null) {
-            return;
+            return isAccessTokenValid;
         }
 
         if (context.getAuthorizationHeader() == null) {
             isAccessTokenValid = false;
-            return;
+            return isAccessTokenValid;
         }
 
             String testApi = "https://api.github.com/user";
@@ -114,6 +114,7 @@ public class GitHubApiClient {
 
             requestCnt++;
             isAccessTokenValid = (response.statusCode() == 200);
+            return isAccessTokenValid;
 
         } catch (IOException | InterruptedException e) {
             throw new GitHubApiException("Failed to validate the access token", e);

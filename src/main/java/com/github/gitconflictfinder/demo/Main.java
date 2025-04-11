@@ -10,9 +10,7 @@ public class Main {
         String repoName = "git-test-project";
         String accessToken = "";
 
-        String localRepoPath = "C:\\Users\\my_username\\Desktop\\FTN SIIT\\Random\\JetBrains, 2025\\1. Improvements of managing infrastructure code in TeamCity\\TestProject1\\git-test-project";
-        //String localRepoPath = "C:\\Users\\my_username\\Desktop\\FTN SIIT\\Random\\JetBrains, 2025\\1. Improvements of managing infrastructure code in TeamCity\\TestProject2\\git-test-project";
-        //String localRepoPath = "C:\\Users\\my_username\\Desktop\\FTN SIIT\\Random\\JetBrains, 2025\\1. Improvements of managing infrastructure code in TeamCity\\TestProject3\\git-test-project";
+        String localRepoPath = "C:\\Users\\my_user\\Desktop\\FTN SIIT\\Random\\JetBrains, 2025\\1. Improvements of managing infrastructure code in TeamCity\\TestProject1\\git-test-project";
 
         String branchA = "main";
         String branchB = "dev";
