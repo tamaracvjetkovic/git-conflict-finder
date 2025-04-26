@@ -1,4 +1,4 @@
-# GitConflictFinder Library 📚
+# GitConflictFinder 📚
 
 A library that detects conflicted files between two branches in a GitHub repository.
 
@@ -8,6 +8,28 @@ It is assumed that:
 3) the local branchA is not necessarily synchronized with the remote branchA,
 4) the local branchB is created from branchA locally,
 5) there is only one merge base between the branches, the same remotely and locally
+   
+---
+
+The ``goal`` of the project was to:
+- implement a library that finds all files changed independently in two Git branches since their merge base,
+- interact with GitHub using the REST API and with the local repository using the Git CLI commands,
+- research and select the best approach without using specialized libraries,
+- focus on writing clean and production-level code with proper error handling and testing,
+#
+Technologies used: 
+- ``Java``
+#
+Date: April, 2025.
+
+---
+
+# How does it work? ❓
+- after setting the parameters (owner, repo, accessToken, localRepoPath, branchA, branchB), the library returns the conflicted files,
+- the conflicted files are found using the GitHub API and local Git commands,
+- displays error messages if something goes wrong
+
+---
 
 # Using the Library ⚙️
 
@@ -35,6 +57,8 @@ To use this library, follow the next steps:
 </dependencies>
 ```
 and sync the project! :) 
+
+---
 
 # Demo code (fast example) 🕹️
 
@@ -68,6 +92,8 @@ public class Main {
     }
 }
 ```
+
+---
 
 # Helpful 💡
 
